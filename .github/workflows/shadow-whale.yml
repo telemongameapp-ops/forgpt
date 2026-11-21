@@ -1,0 +1,89 @@
+name: Shadow Whale - analyze and render
+on:
+  push:
+    paths:
+      - '.github/workflows/shadow-whale.yml'
+      - 'scripts/whale_render.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Collect source files
+        run: |
+          mkdir -p original/reference original/sounds original/kits analysis
+          git fetch origin reference sounds kits
+          git archive origin/reference | tar -xf - -C original/reference
+          git archive origin/sounds | tar -xf - -C original/sounds
+          git archive origin/kits | tar -xf - -C original/kits
+          ffprobe -v error -show_entries format=duration,size:stream=codec_name,codec_type,width,height,r_frame_rate -of json original/reference/Telemon_Chronarch_v5.mp4 > analysis/reference_ffprobe.json
+          python -m pip install --quiet pillow
+      - name: Inspect reference and prepare contact sheet
+        run: |
+          python - <<'PY'
+          import json, subprocess, pathlib, math
+          from PIL import Image,ImageOps,ImageDraw,ImageFont
+          base=pathlib.Path('original')
+          out=pathlib.Path('analysis')
+          ref=base/'reference'/'Telemon_Chronarch_v5.mp4'
+          meta=json.loads((out/'reference_ffprobe.json').read_text())
+          duration=float(meta['format']['duration'])
+          ims=[]
+          for n in range(9):
+              s=duration*(.03+n*.115)
+              f=out/('frame_%02d.jpg'%n)
+              subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-y','-ss',str(s),'-i',str(ref),'-frames:v','1','-q:v','3',str(f)],check=True)
+              im=Image.open(f).convert('RGB')
+              im.thumbnail((300,480))
+              canvas=Image.new('RGB',(320,520),'#131721')
+              canvas.paste(im,((320-im.width)//2,8))
+              ImageDraw.Draw(canvas).text((14,488),f'{s:0.2f}s',fill='white')
+              ims.append(canvas)
+          grid=Image.new('RGB',(960,1560),'#131721')
+          for n,im in enumerate(ims): grid.paste(im,((n%3)*320,(n//3)*520))
+          grid.save(out/'chronarch_contact_sheet.jpg',quality=80,optimize=True)
+          # audio metadata in one JSON file
+          items=[]
+          for branch in ['kits','sounds']:
+              for path in sorted((base/branch).glob('*.mp3')):
+                  d=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_entries','format=duration,size:stream=codec_name,channels,sample_rate','-of','json',str(path)]).decode())
+                  items.append({'branch':branch,'file':path.name,'duration':round(float(d.get('format',{}).get('duration',0)),3),'size':path.stat().st_size,'transcript':None})
+          (out/'manifest.json').write_text(json.dumps(items,ensure_ascii=False,indent=2),encoding='utf8')
+          print('DURATION',duration,'STREAMS',meta.get('streams'))
+          print('AUDIO_FILES',len(items))
+          PY
+      - name: Transcribe voice clips
+        continue-on-error: true
+        run: |
+          python -m pip install --quiet faster-whisper
+          python - <<'PY'
+          import pathlib,json
+          from faster_whisper import WhisperModel
+          manifest=pathlib.Path('analysis/manifest.json')
+          data=json.loads(manifest.read_text(encoding='utf8'))
+          model=WhisperModel('base',device='cpu',compute_type='int8',cpu_threads=4)
+          for item in data:
+              if item['branch']!='kits':continue
+              p=pathlib.Path('original/kits')/item['file']
+              segs,info=model.transcribe(str(p),language='ru',beam_size=5,vad_filter=False,condition_on_previous_text=False)
+              item['transcript']=' '.join(s.text.strip() for s in segs).strip()
+              print(item['file'][:24],repr(item['transcript']))
+          manifest.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf8')
+          PY
+      - name: Publish analysis
+        run: |
+          git config user.name "telemon-video-bot"
+          git config user.email "telemon-video-bot@users.noreply.github.com"
+          git add analysis/reference_ffprobe.json analysis/chronarch_contact_sheet.jpg analysis/manifest.json
+          git commit -m "Analyze Chronarch reference and Shadow Whale audio assets" || true
+          git push origin HEAD:main
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whale-analysis
+          path: analysis/
