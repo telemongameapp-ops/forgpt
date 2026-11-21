@@ -22,6 +22,8 @@ jobs:
           git archive origin/reference | tar -xf - -C original/reference
           git archive origin/sounds | tar -xf - -C original/sounds
           git archive origin/kits | tar -xf - -C original/kits
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg >/dev/null
           ffprobe -v error -show_entries format=duration,size:stream=codec_name,codec_type,width,height,r_frame_rate -of json original/reference/Telemon_Chronarch_v5.mp4 > analysis/reference_ffprobe.json
           python -m pip install --quiet pillow
       - name: Inspect reference and prepare contact sheet
