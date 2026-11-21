@@ -41,10 +41,10 @@ def emissive(name,color,strength=5):
     out=n.new("ShaderNodeOutputMaterial");em=n.new("ShaderNodeEmission")
     em.inputs["Color"].default_value=(*color,1);em.inputs["Strength"].default_value=strength
     m.node_tree.links.new(em.outputs[0],out.inputs["Surface"]);return m
-dark=mat("01 Shadowed slate - rock",(0.056,.082,.115))
-slate=mat("02 Ancient stone",(0.08,.105,.13))
+dark=mat("01 Shadowed slate - rock",(0.08,.12,.16))
+slate=mat("02 Ancient stone",(0.12,.16,.2))
 rock2=mat("03 Frost cliff",(0.115,.15,.18))
-blue=mat("04 Living whale stone",(0.044,.073,.103),.95)
+blue=mat("04 Living whale stone",(0.11,.17,.225),.93)
 ridge=mat("05 Ridge stone",(0.093,.137,.165))
 hoodmat=mat("06 Indigo travellers wool",(0.059,.081,.127))
 cape=mat("07 Dusty blue cloak",(.073,.105,.163))
@@ -183,6 +183,7 @@ for k in range(4):
 torchlight=light("Low campfire light","POINT",(2.5,-4.0,.5),(1,.28,.08),750)
 # Film light setup
 light("Polar rim light","AREA",(-15,7,23),(.20,.53,1.0),2200,14)
+light("Front cold fill","AREA",(-1,-16,13),(.36,.58,.82),2800,16)
 light("Cold heaven","AREA",(9,20,23),(.22,.46,.78),2500,16)
 light("Whale eye fill","POINT",(-6,2.5,9),(.12,.57,1),1150)
 light("Dim moon","AREA",(0,-14,24),(.23,.36,.56),850,13)
@@ -204,15 +205,15 @@ try:
     out=ns.new("ShaderNodeOutputMaterial");fm.node_tree.links.new(vo.outputs["Volume"],out.inputs["Volume"]);assign(fog,fm)
 except Exception as e: print("FOG",e)
 frames=[
-    ((-8,-20,6), (0,6,6), -1.8,0.0, 0.65),
+    ((0,-20,4.4), (0,8,5.5), -3.4,0.0, 0.55),
     ((-2,-16,3), (0,6,2.4), -1.2,0.0, 1.0),
-    ((-11,-5,10), (-.7,4,8.5), .0,.0, 1.0),
-    ((-9,-17,11), (0,12,7.5), 0.7,.0, 1.0),
-    ((-13,-8,11.5), (0,12,9), 2.0,.0, 1.0),
+    ((-2.5,-12,5.6), (-1,5.2,8.5), -0.3,0.0, 1.0),
+    ((1.2,-21,6.7), (0,9,7.0), 0.4,0.0, 1.0),
+    ((-3.0,-15,6.4), (0,8.5,8.6), 1.8,0.0, 1.0),
     ((-4,-13,7), (0,9,6), 1.1,1.5, 1.0),
-    ((-7,-10,4.5), (-1,1,3), -2.5,2.0, 1.0),
-    ((2,-9,3), (2,0,.3), -4.3, 0.0, 1.8),
-    ((-10,-21,8.5), (0,13,7.4), -3.5,0.0, .55),
+    ((1.0,-12,4.6), (-1.1,3.5,3.5), -2.3,2.0, 1.0),
+    ((2,-9,3), (2,0,.3), -4.3,0.0, 1.8),
+    ((0,-19,5.8), (0,11,7.5), -3.5,0.0, .75),
 ]
 outdir=os.getenv("WHALE_FRAMES","/tmp/whale_frames");os.makedirs(outdir,exist_ok=True)
 for i,(pos,target,zoffset,traveler_z,firepower) in enumerate(frames):

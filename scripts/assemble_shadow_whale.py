@@ -115,13 +115,14 @@ for start,name,vol,once in SOUNDS:
     delay=round(start*1000)
     layers.append(f"[{ix}:a]aresample=48000,aformat=channel_layouts=stereo,volume={vol},adelay={delay}|{delay}[s{ix}]")
 all_labels="".join(f"[s{i}]" for i in range(len(VOICES)+len(SOUNDS)))
-fc=";".join(layers)+f";{all_labels}amix=inputs={len(VOICES)+len(SOUNDS)}:duration=longest:dropout_transition=0,atrim=0:{DURATION:.6f},alimiter=limit=0.93[outa]"
+fc=";".join(layers)+f";{all_labels}amix=inputs={len(VOICES)+len(SOUNDS)}:duration=longest:dropout_transition=0:normalize=0,atrim=0:{DURATION:.6f},alimiter=limit=0.93[outa]"
 run(["ffmpeg","-hide_banner","-loglevel","error","-y",*inputs,"-filter_complex",fc,"-map","[outa]",
      "-c:a","aac","-b:a","192k",OUT/"soundtrack.m4a"])
 # Save final H264/AAC, original Chronarch framing (1080x1920, 30fps, 17.867s)
 run(["ffmpeg","-hide_banner","-loglevel","error","-y","-i",OUT/"video_silent.mp4",
      "-i",OUT/"soundtrack.m4a","-vf",f"ass={ass.as_posix()}",
      "-c:v","libx264","-preset","medium","-crf","19","-pix_fmt","yuv420p",
+     "-af","loudnorm=I=-16:TP=-1.5:LRA=8",
      "-c:a","aac","-b:a","192k","-t",f"{DURATION:.6f}","-movflags","+faststart",
      OUT/"Telemon_Shadow_Whale_v1.mp4"])
 # Save a clear nine-frame review sheet for user
