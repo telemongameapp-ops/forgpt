@@ -9,7 +9,7 @@ scene.render.resolution_x=720;scene.render.resolution_y=1280;scene.render.resolu
 scene.render.image_settings.file_format="PNG"
 scene.render.film_transparent=False
 scene.view_settings.view_transform="AgX" if bpy.app.version[0]>=4 else "Filmic"
-scene.view_settings.look="Medium High Contrast" if bpy.app.version[0]>=4 else "Medium High Contrast"
+scene.view_settings.look="AgX - Medium High Contrast" if bpy.app.version[0]>=4 else "Medium High Contrast"
 for engine in ("CYCLES",):
     try: scene.render.engine=engine;break
     except:pass
