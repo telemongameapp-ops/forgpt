@@ -1,0 +1,62 @@
+name: Render Telemon Shadow Whale
+on:
+  push:
+    paths:
+      - ".github/workflows/render-shadow-whale.yml"
+      - "scripts/shadow_whale_scene.py"
+      - "scripts/assemble_shadow_whale.py"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install Blender and audio/video tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg blender fonts-dejavu-core >/dev/null
+          python -m pip install --quiet Pillow
+          blender --version | head -3
+          ffmpeg -version | head -1
+      - name: Load assets from dedicated branches
+        run: |
+          mkdir -p original/reference original/sounds original/kits frames output
+          git fetch origin reference sounds kits
+          git archive origin/reference | tar -xf - -C original/reference
+          git archive origin/sounds | tar -xf - -C original/sounds
+          git archive origin/kits | tar -xf - -C original/kits
+          test -s original/reference/Telemon_Chronarch_v5.mp4
+      - name: Render the cinematic 3D scenes
+        run: |
+          WHALE_FRAMES="$PWD/frames" blender -b -t 4 --python scripts/shadow_whale_scene.py
+      - name: Assemble trailer with voice and sound
+        run: |
+          python scripts/assemble_shadow_whale.py
+      - name: Verify playable video
+        run: |
+          test -s output/Telemon_Shadow_Whale_v1.mp4
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=codec_name,codec_type,width,height -of json output/Telemon_Shadow_Whale_v1.mp4
+          ffmpeg -v error -i output/Telemon_Shadow_Whale_v1.mp4 -t 1 -f null -
+      - name: Publish ready MP4 to repository
+        run: |
+          git config user.name "telemon-video-bot"
+          git config user.email "telemon-video-bot@users.noreply.github.com"
+          git add output/Telemon_Shadow_Whale_v1.mp4 output/Shadow_Whale_preview.jpg output/render_info.json
+          git commit -m "Render Shadow Whale v1 (1080x1920, voice, SFX)" || true
+          git push origin HEAD:main
+      - name: Provide downloadable video
+        uses: actions/upload-artifact@v4
+        with:
+          name: Telemon_Shadow_Whale_MP4
+          path: |
+            output/Telemon_Shadow_Whale_v1.mp4
+            output/Shadow_Whale_preview.jpg
+            output/render_info.json
+          compression-level: 0
+          retention-days: 30
