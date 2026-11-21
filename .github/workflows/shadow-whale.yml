@@ -64,6 +64,14 @@ jobs:
         continue-on-error: true
         run: |
           python -m pip install --quiet faster-whisper
+          python - <<'PYPATCH'
+          import faster_whisper.audio, pathlib
+          p=pathlib.Path(faster_whisper.audio.__file__)
+          s=p.read_text()
+          s=s.replace(', metadata_errors="ignore"', '')
+          p.write_text(s)
+          print('Patched PyAV decode compatibility')
+          PYPATCH
           python - <<'PY'
           import pathlib,json
           from faster_whisper import WhisperModel
