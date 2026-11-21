@@ -103,14 +103,14 @@ inputs=[]
 layers=[]
 for start,prefix in VOICES:
     path=fname(prefix,BASE/"original/kits")
-    ix=len(inputs)
+    ix=len(inputs)//2
     inputs+=["-i",path]
     delay=round(start*1000)
     layers.append(f"[{ix}:a]aresample=48000,aformat=channel_layouts=stereo,volume=1.28,adelay={delay}|{delay}[s{ix}]")
 for start,name,vol,once in SOUNDS:
     path=BASE/"original/sounds"/name
     if not path.exists():raise RuntimeError(f"Missing sound file {path}")
-    ix=len(inputs)
+    ix=len(inputs)//2
     inputs+=["-i",path]
     delay=round(start*1000)
     layers.append(f"[{ix}:a]aresample=48000,aformat=channel_layouts=stereo,volume={vol},adelay={delay}|{delay}[s{ix}]")
