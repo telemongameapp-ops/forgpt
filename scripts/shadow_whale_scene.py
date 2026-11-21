@@ -10,11 +10,11 @@ scene.render.image_settings.file_format="PNG"
 scene.render.film_transparent=False
 scene.view_settings.view_transform="AgX" if bpy.app.version[0]>=4 else "Filmic"
 scene.view_settings.look="Medium High Contrast" if bpy.app.version[0]>=4 else "Medium High Contrast"
-for engine in ("BLENDER_EEVEE_NEXT","BLENDER_EEVEE","CYCLES"):
+for engine in ("CYCLES",):
     try: scene.render.engine=engine;break
     except:pass
 if scene.render.engine=="CYCLES":
-    scene.cycles.samples=22
+    scene.cycles.samples=14
     scene.cycles.use_denoising=True
 else:
     try:scene.eevee.taa_render_samples=64
